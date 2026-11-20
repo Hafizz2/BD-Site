@@ -26,6 +26,15 @@ class SetupSite extends Command
 
         $this->components->info('Setting up Ye Birhan Dana ('.app()->environment().')');
 
+        // A server installed with `composer install --no-dev` has no dev tools — it must not run as "local".
+        if (! $production && ! class_exists(\Faker\Factory::class)) {
+            $this->components->error('APP_ENV is "'.app()->environment().'", but this looks like a server (dev packages are not installed).');
+            $this->line('  Open .env and set:  APP_ENV=production  and  APP_DEBUG=false');
+            $this->line('  Then run:           php artisan config:clear && php artisan jemea:setup');
+
+            return self::FAILURE;
+        }
+
         if (blank(config('app.key'))) {
             $this->components->error('APP_KEY is empty. Run: php artisan key:generate');
 

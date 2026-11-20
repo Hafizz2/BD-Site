@@ -19,7 +19,8 @@ class DatabaseSeeder extends Seeder
             SampleContentSeeder::class,
         ]);
 
-        if (app()->environment('local')) {
+        // Fake data needs the dev tools (Faker), which a server install (`composer install --no-dev`) doesn't have.
+        if (app()->environment('local') && class_exists(\Faker\Factory::class)) {
             $this->call(DemoSeeder::class);
         }
     }
