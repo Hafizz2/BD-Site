@@ -61,6 +61,8 @@ class SetupSite extends Command
             return $this->callSilently('storage:link') === 0;
         });
 
+        $this->components->task('Website images on the public disk', fn () => $this->callSilently('media:make-website-public') === 0);
+
         $this->components->task('Admin panel assets', fn () => $this->callSilently('filament:assets') === 0);
 
         $this->callSilently('optimize:clear');

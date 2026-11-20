@@ -38,6 +38,15 @@ return [
             'report' => false,
         ],
 
+        // Receipts (payments, expenses) — never web-accessible; staff open them through a signed link.
+        'private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/receipts'),
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

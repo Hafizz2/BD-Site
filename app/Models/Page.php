@@ -50,7 +50,7 @@ class Page extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('cover')->singleFile();
+        $this->addMediaCollection('cover')->useDisk('public')->singleFile();
     }
 
     public function registerMediaConversions(?Media $media = null): void

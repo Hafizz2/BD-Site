@@ -62,7 +62,7 @@ class GalleryAlbum extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('photos');
+        $this->addMediaCollection('photos')->useDisk('public');
     }
 
     public function registerMediaConversions(?Media $media = null): void
