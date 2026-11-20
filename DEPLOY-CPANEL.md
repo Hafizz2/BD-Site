@@ -66,15 +66,13 @@ If it is lower than 8.2, use the full path instead of `php` in every command bel
 
 ```bash
 cd ~/yebirhandana
-composer install --no-dev --optimize-autoloader
-```
-
-If `composer` is "not found":
-
-```bash
-curl -sS https://getcomposer.org/installer | php
+php -m | grep -i intl                               # must print: intl  (see "Problems we hit" below if not)
+curl -sS https://getcomposer.org/installer | php    # downloads composer.phar into this folder
 php composer.phar install --no-dev --optimize-autoloader
 ```
+
+> Always run composer as `php composer.phar …` — not the server's own `composer` command. The server's `composer`
+> can run under a different (older) PHP without the `intl` extension and fail with *"requires ext-intl"*.
 
 ## 4. Settings file (.env)
 
@@ -83,7 +81,8 @@ cp .env.example .env
 nano .env
 ```
 
-Fill in (Ctrl+O, Enter to save, Ctrl+X to exit):
+Fill in (Ctrl+O, Enter to save, Ctrl+X to exit). **`APP_ENV=production` and `APP_DEBUG=false` are essential** —
+with `local`, setup tries to load fake test data and the server shows technical error pages to visitors.
 
 ```dotenv
 APP_NAME="Ye Birhan Dana"
@@ -139,8 +138,20 @@ mv ~/public_html ~/public_html_old
 ln -s ~/yebirhandana/public ~/public_html
 ```
 
-> If your host does not allow a linked `public_html`, ask support to set the domain's document root to
-> `/home/CPUSER/yebirhandana/public` — that does the same thing.
+Then give the web server the right permissions:
+
+```bash
+chmod 711 ~
+chmod 755 ~/yebirhandana ~/yebirhandana/public
+find ~/yebirhandana/public -type d -exec chmod 755 {} \;
+find ~/yebirhandana/public -type f -exec chmod 644 {} \;
+chmod -R 775 ~/yebirhandana/storage ~/yebirhandana/bootstrap/cache
+```
+
+Check (use your real domain): `curl -s -o /dev/null -w "HTTP %{http_code}\n" https://yourdomain.com` → should print `HTTP 200`.
+
+> If your host does not allow a linked `public_html` (you get 403 even after the permissions above), ask support to set
+> the domain's document root to `/home/CPUSER/yebirhandana/public` — that does the same thing.
 
 ## 6. HTTPS
 
@@ -151,10 +162,10 @@ cPanel → **SSL/TLS Status** → **Run AutoSSL**. Then **Domains** → turn on 
 cPanel → **Cron Jobs** → *Once Per Minute* (`* * * * *`), command:
 
 ```bash
-cd /home/CPUSER/yebirhandana && php artisan schedule:run >> /dev/null 2>&1
+cd /home/CPUSER/yebirhandana && /full/path/to/php artisan schedule:run >> /dev/null 2>&1
 ```
 
-(Use the full PHP path from step 2 if `php -v` was lower than 8.2.)
+Get `/full/path/to/php` by running `which php` in the terminal — cron does not always use the same PHP as your terminal.
 
 ## 8. Telegram bot (when ready)
 
@@ -182,7 +193,7 @@ On your computer: `git add . && git commit -m "what changed" && git push`. Then 
 cd ~/yebirhandana
 php artisan down
 git pull
-composer install --no-dev --optimize-autoloader
+php composer.phar install --no-dev --optimize-autoloader
 php artisan jemea:setup
 php artisan up
 ```
@@ -198,3 +209,13 @@ php artisan up
 | Manual database backup | `php artisan backup:run --only-db` (saved in `storage/app/private/`) |
 | Put site in maintenance | `php artisan down` / back: `php artisan up` |
 | Check scheduled jobs | `php artisan schedule:list` |
+| See only the error headlines | `grep -h "^\[20" storage/logs/laravel-*.log \| tail -n 5 \| cut -c1-300` |
+
+## Problems we hit on the first deploy (and the fix)
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `composer install` says *requires ext-intl … missing* | The `intl` PHP extension is off, or the server's `composer` runs under another PHP version | Turn on **intl** in cPanel → *Select PHP Version* (or ask the host for `ea-php82-php-intl`), then run composer as `php composer.phar install --no-dev -o` |
+| `Call to a member function randomElement() on null` (StudentFactory) during setup | `.env` still had `APP_ENV=local`, so setup tried to load fake test data | Set `APP_ENV=production`, `APP_DEBUG=false`, then `php artisan config:clear && php artisan demo:cleanup --force && php artisan jemea:setup`, and switch the sample batches' links off in Admin → Registration forms. (Newer versions refuse to run in this state and tell you what to change.) |
+| Site shows 403 after linking `public_html` | Folder permissions | The `chmod` commands in step 5 |
+| `curl` shows 301 | Normal redirect (http → https, or www → no-www) | Check with `curl -sI https://yourdomain.com \| grep -i location`; the final page should be `HTTP 200` |

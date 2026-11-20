@@ -90,7 +90,7 @@ Scheduled jobs: queue worker (`queue:work --stop-when-empty`), scheduled announc
    ```
 4. Add the cron line above, then run `php artisan bot:set-webhook`.
 
-After each update: `composer install --no-dev -o && php artisan jemea:setup` (it never duplicates or overwrites content you edited).
+After each update: `git pull && php composer.phar install --no-dev -o && php artisan jemea:setup` (it never duplicates or overwrites content you edited).
 
 ## Backups
 
